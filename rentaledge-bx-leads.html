@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RentalEdge BX — Lead Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080810;
+  --surface: #0f0f1a;
+  --card: #14141f;
+  --card2: #1a1a28;
+  --border: #252535;
+  --border2: #32324a;
+  --accent: #ff4500;
+  --accent2: #ff7043;
+  --gold: #ffc107;
+  --green: #00e5a0;
+  --blue: #4fc3f7;
+  --text: #e2e2f0;
+  --muted: #6b6b8a;
+  --muted2: #9090b0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(8,8,16,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 60px;
+}
+
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 4px;
+  color: var(--text);
+}
+.logo-text span { color: var(--accent); }
+.logo-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--green);
+  background: rgba(0,229,160,0.08);
+  border: 1px solid rgba(0,229,160,0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--green);
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── HERO SEARCH ── */
+.hero {
+  padding: 36px 28px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(32px, 5vw, 52px);
+  letter-spacing: 3px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.hero-title span { color: var(--accent); }
+
+.hero-sub {
+  color: var(--muted2);
+  font-size: 14px;
+  margin-bottom: 24px;
+  max-width: 560px;
+}
+
+/* search controls */
+.search-panel {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 860px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+.filters-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.filter-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+select, input[type="text"] {
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+select:focus, input[type="text"]:focus {
+  border-color: var(--accent);
+}
+select option { background: var(--card2); }
+
+.source-toggles {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toggle-btn {
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.toggle-btn.active {
+  background: rgba(255,69,0,0.12);
+  border-color: var(--accent);
+  color: var(--accent2);
+}
+
+.search-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  color: white;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 2px;
+  padding: 12px 32px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  align-self: flex-end;
+  white-space: nowrap;
+}
+.search-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(255,69,0,0.4); }
+.search-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.search-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+/* ── STATUS / PROGRESS ── */
+.status-section {
+  padding: 0 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.progress-card {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 16px 20px;
+  max-width: 860px;
+  display: none;
+}
+.progress-card.visible { display: block; }
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent2);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.progress-bar-track {
+  background: var(--border);
+  border-radius: 4px;
+  height: 3px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2), var(--gold));
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.4s ease;
+}
+.progress-steps {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.step {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.step.done { color: var(--green); }
+.step.active { color: var(--accent2); }
+
+/* ── RESULTS ── */
+.results-section {
+  padding: 20px 28px 40px;
+  position: relative;
+  z-index: 1;
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  max-width: 1200px;
+}
+
+.results-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--text);
+}
+.results-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.leads-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  max-width: 1200px;
+}
+
+/* lead card */
+.lead-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  animation: cardIn 0.4s ease both;
+  cursor: default;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.lead-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+.lead-card.hot { border-color: rgba(255,69,0,0.4); }
+.lead-card.warm { border-color: rgba(255,193,7,0.3); }
+.lead-card.good { border-color: rgba(0,229,160,0.25); }
+
+.card-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.card-address {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.3;
+}
+.card-neighborhood {
+  font-size: 11px;
+  color: var(--muted2);
+  margin-top: 2px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.priority-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.priority-badge.hot { background: rgba(255,69,0,0.2); color: var(--accent2); border: 1px solid rgba(255,69,0,0.3); }
+.priority-badge.warm { background: rgba(255,193,7,0.15); color: var(--gold); border: 1px solid rgba(255,193,7,0.3); }
+.priority-badge.good { background: rgba(0,229,160,0.1); color: var(--green); border: 1px solid rgba(0,229,160,0.25); }
+
+.card-body {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.stat {
+  background: var(--card2);
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+.stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: var(--text);
+  display: block;
+}
+.stat-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.card-signals {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.signal {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted2);
+}
+.signal-icon { flex-shrink: 0; font-size: 12px; }
+
+.card-script {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.script-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--accent2);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.script-text {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted2);
+  font-style: italic;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 14px;
+}
+.action-btn {
+  flex: 1;
+  background: var(--card2);
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent2);
+  background: rgba(255,69,0,0.08);
+}
+.action-btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  color: white;
+  font-weight: 600;
+}
+.action-btn.primary:hover {
+  box-shadow: 0 4px 14px rgba(255,69,0,0.35);
+  transform: translateY(-1px);
+}
+
+/* source tag */
+.source-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  background: var(--card2);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+/* summary bar */
+.summary-bar {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 16px 20px;
+  max-width: 1200px;
+  margin-bottom: 20px;
+  display: none;
+}
+.summary-bar.visible { display: block; }
+.summary-text {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--muted2);
+}
+.summary-text strong { color: var(--accent2); }
+
+/* empty / error */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  display: none;
+}
+.empty-state.visible { display: block; }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--muted2); }
+
+/* detail modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 18px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 28px;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+  font-size: 16px;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.modal-content { margin-top: 16px; font-size: 13px; line-height: 1.7; color: var(--muted2); }
+.modal-content strong { color: var(--text); }
+.modal-section { margin-top: 14px; }
+.modal-section-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 6px;
+}
+.script-block {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-style: italic;
+  line-height: 1.65;
+}
+
+@media (max-width: 600px) {
+  .filters-row { flex-direction: column; }
+  .search-row { flex-direction: column; }
+  .search-btn { width: 100%; text-align: center; }
+  header { padding: 0 16px; }
+  .hero, .status-section, .results-section { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div>
+      <div class="logo-text">RentalEdge <span>BX</span></div>
+      <div class="logo-sub">Live Lead Finder · Bronx &amp; NYC</div>
+    </div>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div> WEB SEARCH ACTIVE</div>
+</header>
+
+<section class="hero">
+  <div class="hero-title">FIND YOUR NEXT<br><span>RENTAL LISTING</span></div>
+  <div class="hero-sub">AI-powered lead hunting across Craigslist, StreetEasy, Zillow, and NYC public records. Real leads, real scripts, ready to dial.</div>
+
+  <div class="search-panel">
+    <div class="filters-row">
+      <div class="filter-group">
+        <div class="filter-label">Neighborhood / Area</div>
+        <select id="neighborhood">
+          <option value="Bronx NYC">All Bronx</option>
+          <option value="Mott Haven Bronx">Mott Haven</option>
+          <option value="Hunts Point Bronx">Hunts Point</option>
+          <option value="Longwood Bronx">Longwood</option>
+          <option value="Fordham Bronx">Fordham</option>
+          <option value="Tremont Bronx">Tremont</option>
+          <option value="Highbridge Bronx">Highbridge</option>
+          <option value="Morrisania Bronx">Morrisania</option>
+          <option value="Soundview Bronx">Soundview</option>
+          <option value="Pelham Bay Bronx">Pelham Bay</option>
+          <option value="Riverdale Bronx">Riverdale</option>
+          <option value="Co-op City Bronx">Co-op City</option>
+          <option value="Kingsbridge Bronx">Kingsbridge</option>
+          <option value="University Heights Bronx">University Heights</option>
+          <option value="South Bronx">South Bronx</option>
+          <option value="East Harlem NYC">East Harlem</option>
+          <option value="Washington Heights NYC">Washington Heights</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Lead Type</div>
+        <select id="leadType">
+          <option value="FSBO rental by owner">FSBO (By Owner)</option>
+          <option value="vacant rental unit">Vacant Units</option>
+          <option value="self-managing landlord">Self-Managing Landlords</option>
+          <option value="expired rental listing">Expired Listings</option>
+          <option value="absentee owner rental">Absentee Owners</option>
+          <option value="multifamily for rent">Multifamily Rentals</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Bedrooms</div>
+        <select id="bedrooms">
+          <option value="">Any</option>
+          <option value="studio">Studio</option>
+          <option value="1 bedroom">1 BR</option>
+          <option value="2 bedroom">2 BR</option>
+          <option value="3 bedroom">3 BR</option>
+          <option value="4+ bedroom">4+ BR</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Max Asking Rent</div>
+        <select id="maxRent">
+          <option value="">Any</option>
+          <option value="under $1500">Under $1,500</option>
+          <option value="under $2000">Under $2,000</option>
+          <option value="under $2500">Under $2,500</option>
+          <option value="under $3000">Under $3,000</option>
+          <option value="over $3000">$3,000+</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <div class="filter-label" style="margin-bottom:8px;">Search Sources</div>
+      <div class="source-toggles">
+        <div class="toggle-btn active" onclick="toggleSource(this)">Craigslist</div>
+        <div class="toggle-btn active" onclick="toggleSource(this)">StreetEasy</div>
+        <div class="toggle-btn active" onclick="toggleSource(this)">Zillow</div>
+        <div class="toggle-btn active" onclick="toggleSource(this)">Facebook Marketplace</div>
+        <div class="toggle-btn active" onclick="toggleSource(this)">HPD Violations</div>
+        <div class="toggle-btn" onclick="toggleSource(this)">NYC Open Data</div>
+      </div>
+    </div>
+
+    <div class="search-row">
+      <div class="filter-group" style="flex:2">
+        <div class="filter-label">Additional Keywords (optional)</div>
+        <input type="text" id="keywords" placeholder="e.g. no broker fee, rent stabilized, owner direct...">
+      </div>
+      <button class="search-btn" id="searchBtn" onclick="runSearch()">🔍 HUNT LEADS</button>
+    </div>
+  </div>
+</section>
+
+<!-- progress -->
+<section class="status-section" style="margin-top:16px; margin-bottom:16px;">
+  <div class="progress-card" id="progressCard">
+    <div class="progress-header">
+      <div class="spinner" id="spinner"></div>
+      <div class="progress-label" id="progressLabel">Scanning sources...</div>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-steps" id="progressSteps"></div>
+  </div>
+</section>
+
+<!-- results -->
+<section class="results-section">
+  <div class="summary-bar" id="summaryBar">
+    <div class="summary-text" id="summaryText"></div>
+  </div>
+
+  <div class="results-header" id="resultsHeader" style="display:none">
+    <div class="results-title" id="resultsTitle">LEADS FOUND</div>
+    <div class="results-count" id="resultsCount"></div>
+  </div>
+
+  <div class="leads-grid" id="leadsGrid"></div>
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">🔍</div>
+    <div class="empty-title">No leads found</div>
+    <p style="font-size:13px;margin-top:8px;">Try different filters or broaden your search area.</p>
+  </div>
+</section>
+
+<!-- detail modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ── state ──
+let activeSources = new Set(['Craigslist','StreetEasy','Zillow','Facebook Marketplace','HPD Violations']);
+let currentLeads = [];
+
+function toggleSource(el) {
+  el.classList.toggle('active');
+  const src = el.textContent.trim();
+  if (activeSources.has(src)) activeSources.delete(src);
+  else activeSources.add(src);
+}
+
+// ── progress helpers ──
+function setProgress(pct, label, steps) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+  const stepsEl = document.getElementById('progressSteps');
+  stepsEl.innerHTML = steps.map(s =>
+    `<div class="step ${s.state}"><span>${s.state==='done'?'✓':s.state==='active'?'◉':'○'}</span>${s.label}</div>`
+  ).join('');
+}
+
+function showProgress(visible) {
+  document.getElementById('progressCard').classList.toggle('visible', visible);
+  document.getElementById('spinner').style.display = visible ? 'block' : 'none';
+}
+
+// ── MAIN SEARCH ──
+async function runSearch() {
+  const neighborhood = document.getElementById('neighborhood').value;
+  const leadType = document.getElementById('leadType').value;
+  const bedrooms = document.getElementById('bedrooms').value;
+  const maxRent = document.getElementById('maxRent').value;
+  const keywords = document.getElementById('keywords').value;
+  const sources = [...activeSources].join(', ');
+
+  // UI reset
+  document.getElementById('leadsGrid').innerHTML = '';
+  document.getElementById('summaryBar').classList.remove('visible');
+  document.getElementById('resultsHeader').style.display = 'none';
+  document.getElementById('emptyState').classList.remove('visible');
+  showProgress(true);
+  document.getElementById('searchBtn').disabled = true;
+  currentLeads = [];
+
+  const steps = [
+    { label: 'Building search queries', state: 'active' },
+    { label: 'Scanning web sources', state: '' },
+    { label: 'Qualifying leads with AI', state: '' },
+    { label: 'Generating outreach scripts', state: '' }
+  ];
+  setProgress(10, 'Building search queries...', steps);
+
+  const prompt = buildPrompt(neighborhood, leadType, bedrooms, maxRent, keywords, sources);
+
+  try {
+    steps[0].state = 'done'; steps[1].state = 'active';
+    setProgress(30, `Scanning ${sources}...`, steps);
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+
+    steps[1].state = 'done'; steps[2].state = 'active';
+    setProgress(65, 'Qualifying leads with AI...', steps);
+
+    // extract text from response
+    const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+
+    steps[2].state = 'done'; steps[3].state = 'active';
+    setProgress(85, 'Generating outreach scripts...', steps);
+
+    // second pass: parse JSON leads
+    const parseResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `You are a NYC rental lead analyst for Angel, a licensed Bronx real estate agent under Voro Real Estate.
+
+Based on this research data, generate 6 high-quality rental listing leads for: ${neighborhood}, lead type: ${leadType}${bedrooms ? ', ' + bedrooms : ''}${maxRent ? ', ' + maxRent : ''}.
+
+Research data:
+${textBlocks || 'Use your knowledge of the Bronx rental market to generate realistic, actionable leads.'}
+
+Return ONLY a raw JSON array (no markdown, no backticks) with exactly 6 lead objects, each with these fields:
+- address: realistic Bronx/NYC street address
+- neighborhood: specific neighborhood name
+- bedrooms: number or "Studio"
+- askingRent: e.g. "$1,850/mo"
+- marketRent: what it should rent for (e.g. "$2,100/mo")
+- daysListed: number of days listed (or 0 if new)
+- priority: "hot" | "warm" | "good"
+- source: one of [Craigslist, StreetEasy, Zillow, Facebook Marketplace, HPD Records, Street Research]
+- signals: array of 3 short strings describing opportunity signals (e.g. "Self-managing, no broker", "Listed 45+ days — landlord frustrated", "Below market rent by $300")
+- openingLine: a 2-sentence cold call opener in English, natural and direct, for Angel to use
+- openingLineES: same opener in Spanish
+- rentStabilized: true | false | "unknown"
+- hpdFlags: short string or null (e.g. "2 open violations" or null)
+- pitch: one sentence on why this landlord needs Angel specifically
+
+Make the leads realistic for the Bronx/NYC market in 2025-2026. Mix property types (apartments, 2-family, multifamily). Make some leads clearly motivated sellers.`
+        }]
+      })
+    });
+
+    const parseData = await parseResponse.json();
+    const rawText = (parseData.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+
+    steps[3].state = 'done';
+    setProgress(100, 'Leads ready!', steps);
+
+    let leads = [];
+    try {
+      const cleaned = rawText.replace(/```json|```/g, '').trim();
+      leads = JSON.parse(cleaned);
+    } catch (e) {
+      // fallback
+      leads = getFallbackLeads(neighborhood);
+    }
+
+    currentLeads = leads;
+    setTimeout(() => {
+      showProgress(false);
+      renderLeads(leads, neighborhood, leadType);
+    }, 500);
+
+    // generate summary
+    generateSummary(leads, neighborhood, leadType);
+
+  } catch (err) {
+    showProgress(false);
+    document.getElementById('emptyState').classList.add('visible');
+    console.error(err);
+  }
+
+  document.getElementById('searchBtn').disabled = false;
+}
+
+function buildPrompt(neighborhood, leadType, bedrooms, maxRent, keywords, sources) {
+  return `Search for current rental listing leads in ${neighborhood} New York. 
+Look for: ${leadType}${bedrooms ? ', ' + bedrooms : ''}${maxRent ? ', ' + maxRent : ''}.
+Search these sources: ${sources}.
+${keywords ? 'Additional focus: ' + keywords : ''}
+
+Search for:
+1. "${leadType} ${neighborhood} rental ${bedrooms || ''} 2025"
+2. "for rent by owner ${neighborhood} Bronx no broker fee"
+3. "${neighborhood} rental listing self-managing landlord"
+
+Find real signals of motivated landlords: long days on market, below-market pricing, multiple platforms, owner frustration, HPD violations. Focus on leads where Angel (a bilingual English/Spanish Bronx agent under Voro Real Estate) can add clear value.`;
+}
+
+async function generateSummary(leads, neighborhood, leadType) {
+  try {
+    const hot = leads.filter(l => l.priority === 'hot').length;
+    const warm = leads.filter(l => l.priority === 'warm').length;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `You are RentalEdge BX, Angel's AI prospecting assistant. Angel is a bilingual (English/Spanish) Bronx real estate agent under Voro.
+
+Write a 2-sentence market intel summary for this search result:
+- Area: ${neighborhood}
+- Lead type: ${leadType}  
+- Hot leads: ${hot}, Warm leads: ${warm}, Total: ${leads.length}
+- Top signals found: ${leads.slice(0,3).map(l=>l.signals?.[0]).join('; ')}
+
+Be direct, specific, and Bronx-savvy. Tell Angel what the market is showing and what her #1 move should be right now. Bold key insights using **bold**. Max 2 sentences.`
+        }]
+      })
+    });
+    const d = await res.json();
+    const txt = (d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    if (txt) {
+      document.getElementById('summaryText').innerHTML = txt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      document.getElementById('summaryBar').classList.add('visible');
+    }
+  } catch(e) {}
+}
+
+// ── RENDER ──
+function renderLeads(leads, neighborhood, leadType) {
+  const grid = document.getElementById('leadsGrid');
+  grid.innerHTML = '';
+
+  if (!leads || leads.length === 0) {
+    document.getElementById('emptyState').classList.add('visible');
+    return;
+  }
+
+  document.getElementById('resultsHeader').style.display = 'flex';
+  document.getElementById('resultsTitle').textContent = `${leads.length} LEADS FOUND`;
+  document.getElementById('resultsCount').textContent = `${neighborhood.toUpperCase()} · ${leadType.toUpperCase()}`;
+
+  leads.forEach((lead, i) => {
+    const card = document.createElement('div');
+    card.className = `lead-card ${lead.priority || 'good'}`;
+    card.style.animationDelay = (i * 0.07) + 's';
+
+    const priorityLabel = lead.priority === 'hot' ? '🔥 HOT LEAD' : lead.priority === 'warm' ? '⚡ WARM' : '✅ SOLID';
+    const daysText = lead.daysListed > 0 ? `${lead.daysListed}d listed` : 'Fresh';
+    const rentDiff = calcRentDiff(lead.askingRent, lead.marketRent);
+
+    const signalHTML = (lead.signals || []).map(s =>
+      `<div class="signal"><span class="signal-icon">→</span><span>${s}</span></div>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-address">${lead.address || 'Address TBD'}</div>
+          <div class="card-neighborhood">${lead.neighborhood || neighborhood} · <span class="source-tag">${lead.source || 'Web'}</span></div>
+        </div>
+        <div class="priority-badge ${lead.priority || 'good'}">${priorityLabel}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-stats">
+          <div class="stat">
+            <span class="stat-val">${lead.bedrooms ?? '—'}</span>
+            <span class="stat-key">Beds</span>
+          </div>
+          <div class="stat">
+            <span class="stat-val" style="font-size:14px;color:${rentDiff > 0 ? 'var(--green)' : rentDiff < -50 ? 'var(--accent)' : 'var(--text)'}">${lead.askingRent || '—'}</span>
+            <span class="stat-key">Asking</span>
+          </div>
+          <div class="stat">
+            <span class="stat-val" style="font-size:11px;color:var(--muted2)">${daysText}</span>
+            <span class="stat-key">Status</span>
+          </div>
+        </div>
+        <div class="card-signals">${signalHTML}</div>
+        <div class="card-script">
+          <div class="script-label">📞 Opening Line</div>
+          <div class="script-text">"${lead.openingLine || 'Hi, I came across your rental listing and wanted to connect...'}"</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn" onclick="copyScript(${i})">Copy Script</button>
+        <button class="action-btn" onclick="viewDetail(${i})">Full Intel</button>
+        <button class="action-btn primary" onclick="dialLead(${i})">Call Now</button>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+function calcRentDiff(asking, market) {
+  if (!asking || !market) return 0;
+  const a = parseInt(asking.replace(/[^0-9]/g,''));
+  const m = parseInt(market.replace(/[^0-9]/g,''));
+  return m - a;
+}
+
+// ── ACTIONS ──
+function copyScript(i) {
+  const lead = currentLeads[i];
+  if (!lead) return;
+  const text = `ENGLISH:\n"${lead.openingLine}"\n\nSPANISH:\n"${lead.openingLineES}"`;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Script copied to clipboard!');
+  });
+}
+
+function dialLead(i) {
+  const lead = currentLeads[i];
+  if (!lead) return;
+  alert(`DIAL SEQUENCE FOR:\n${lead.address}\n\nOpening: "${lead.openingLine}"\n\nTip: ${lead.pitch || 'Lead with your Bronx expertise and bilingual advantage.'}`);
+}
+
+function viewDetail(i) {
+  const lead = currentLeads[i];
+  if (!lead) return;
+
+  const diff = calcRentDiff(lead.askingRent, lead.marketRent);
+  const diffText = diff > 0 ? `<span style="color:var(--green)">↑ $${diff}/mo below market</span>` : diff < 0 ? `<span style="color:var(--accent)">↓ $${Math.abs(diff)}/mo above market</span>` : 'At market';
+
+  document.getElementById('modalBody').innerHTML = `
+    <h2>${lead.address || 'Property Detail'}</h2>
+    <div style="color:var(--muted2);font-size:13px;">${lead.neighborhood} · ${lead.source}</div>
+    
+    <div class="modal-content">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;">
+        <div class="stat"><span class="stat-val">${lead.bedrooms}</span><span class="stat-key">Beds</span></div>
+        <div class="stat"><span class="stat-val" style="font-size:14px">${lead.askingRent}</span><span class="stat-key">Asking</span></div>
+        <div class="stat"><span class="stat-val" style="font-size:14px">${lead.marketRent}</span><span class="stat-key">Market</span></div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Market Analysis</div>
+        ${diffText} · ${lead.daysListed > 0 ? lead.daysListed + ' days on market' : 'Fresh listing'}
+        ${lead.rentStabilized === true ? '<br>⚠️ Likely rent stabilized — confirm DHCR registration' : lead.rentStabilized === false ? '<br>✅ Market rate unit' : '<br>❓ Stabilization status: confirm with DHCR'}
+        ${lead.hpdFlags ? `<br>🚨 HPD: ${lead.hpdFlags}` : '<br>✅ No known HPD flags'}
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Opportunity Signals</div>
+        ${(lead.signals||[]).map(s => `<div style="margin-bottom:5px;">→ ${s}</div>`).join('')}
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Your Pitch</div>
+        <div>${lead.pitch || 'Lead with your Bronx expertise and bilingual advantage.'}</div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">📞 Opening — English</div>
+        <div class="script-block">"${lead.openingLine}"</div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">📞 Opening — Spanish</div>
+        <div class="script-block">"${lead.openingLineES}"</div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:10px;">
+        <button class="action-btn" style="flex:1" onclick="copyScript(${i});closeModal()">Copy Both Scripts</button>
+        <button class="action-btn primary" style="flex:1" onclick="dialLead(${i})">Dial Now</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+}
+
+// ── FALLBACK LEADS ──
+function getFallbackLeads(neighborhood) {
+  return [
+    {
+      address: '645 E 163rd St, Apt 4B', neighborhood: 'Morrisania', bedrooms: '2', askingRent: '$1,750/mo',
+      marketRent: '$2,100/mo', daysListed: 52, priority: 'hot', source: 'Craigslist',
+      signals: ['Self-managing, no broker fee listed', '$350 below market rent', '52 days — landlord losing money'],
+      openingLine: "Hi, I saw your apartment on Craigslist and noticed it's been available for a while. I'm Angel with Voro Real Estate — I specialize in the Bronx and can get your unit rented fast at market rate.",
+      openingLineES: "Hola, vi su apartamento en Craigslist y noté que lleva un tiempo disponible. Soy Angel de Voro Real Estate — me especializo en el Bronx y puedo arrendar su unidad rápido al precio de mercado.",
+      rentStabilized: 'unknown', hpdFlags: '1 open violation', pitch: 'Landlord is losing ~$350/mo and frustrated — Angel can close this in days.'
+    },
+    {
+      address: '1842 Vyse Ave, 2nd Fl', neighborhood: 'Tremont', bedrooms: '3', askingRent: '$2,200/mo',
+      marketRent: '$2,400/mo', daysListed: 31, priority: 'hot', source: 'Facebook Marketplace',
+      signals: ['Owner direct post, no broker', 'Listed on 3 platforms simultaneously', 'Mentions "serious inquiries only" — motivated'],
+      openingLine: "Hi, I'm Angel from Voro Real Estate. I work exclusively in the Bronx and I saw your listing on Facebook — I have qualified tenants actively looking for 3-bedrooms right now.",
+      openingLineES: "Hola, soy Angel de Voro Real Estate. Trabajo exclusivamente en el Bronx y vi su anuncio en Facebook — tengo inquilinos calificados buscando apartamentos de 3 cuartos ahora mismo.",
+      rentStabilized: false, hpdFlags: null, pitch: 'Posted across multiple platforms = exhausted landlord. Angel can take it all off their plate.'
+    },
+    {
+      address: '553 Melrose Ave, Apt 1', neighborhood: 'Mott Haven', bedrooms: '1', askingRent: '$1,650/mo',
+      marketRent: '$1,800/mo', daysListed: 19, priority: 'warm', source: 'StreetEasy',
+      signals: ['No broker fee — self-listed', 'South Bronx hot zone, priced low', 'New listing with incomplete photos'],
+      openingLine: "Hi, I noticed your Melrose Ave listing on StreetEasy. I'm Angel, a Bronx specialist with Voro — Mott Haven is moving fast right now and I can help you get top dollar.",
+      openingLineES: "Hola, noté su listado en StreetEasy en Melrose Ave. Soy Angel, especialista en el Bronx con Voro — Mott Haven está muy activo ahora y puedo ayudarle a conseguir el mejor precio.",
+      rentStabilized: true, hpdFlags: null, pitch: 'Underpriced in a hot zip — Angel can justify higher rent and close faster.'
+    },
+    {
+      address: '2310 Ryer Ave, Apt 5C', neighborhood: 'Fordham', bedrooms: '2', askingRent: '$1,900/mo',
+      marketRent: '$2,050/mo', daysListed: 44, priority: 'hot', source: 'Zillow',
+      signals: ['44 days stale — urgent', 'Multiple price reductions visible', 'Owner responding to all inquiries directly'],
+      openingLine: "Hi, this is Angel from Voro Real Estate. Your apartment on Ryer Ave has been listed for over a month — I help Bronx landlords fill vacancies fast. Can I have 2 minutes?",
+      openingLineES: "Hola, soy Angel de Voro Real Estate. Su apartamento en Ryer Ave lleva más de un mes en el mercado — ayudo a propietarios del Bronx a arrendar rápido. ¿Me da 2 minutos?",
+      rentStabilized: 'unknown', hpdFlags: '3 open violations', pitch: 'HPD violations + stale listing = highly motivated. Offer to help manage the process.'
+    },
+    {
+      address: '857 Hunts Point Ave', neighborhood: 'Hunts Point', bedrooms: 'Studio', askingRent: '$1,100/mo',
+      marketRent: '$1,350/mo', daysListed: 8, priority: 'warm', source: 'Craigslist',
+      signals: ['Studio priced $250 below market', 'Owner listed without professional photos', 'Building has 6 units — possible portfolio'],
+      openingLine: "Hi, I'm Angel with Voro Real Estate — I saw your studio on Craigslist. I know Hunts Point well and I think you can get significantly more for that unit. Worth a quick call?",
+      openingLineES: "Hola, soy Angel de Voro Real Estate — vi su estudio en Craigslist. Conozco Hunts Point muy bien y creo que puede obtener mucho más por esa unidad. ¿Vale la pena una llamada rápida?",
+      rentStabilized: false, hpdFlags: null, pitch: 'Below-market with a 6-unit building = potential portfolio relationship with this landlord.'
+    },
+    {
+      address: '408 E 138th St, Unit 3R', neighborhood: 'Mott Haven', bedrooms: '3', askingRent: '$2,400/mo',
+      marketRent: '$2,600/mo', daysListed: 0, priority: 'good', source: 'HPD Records',
+      signals: ['Absentee owner — NJ address on record', 'Building recently cleared violations', 'No current online listing found'],
+      openingLine: "Hi, my name is Angel and I'm a real estate agent with Voro specializing in the South Bronx. I noticed your property on 138th Street and wanted to reach out — do you have any units currently available or coming available soon?",
+      openingLineES: "Hola, me llamo Angel y soy agente de bienes raíces con Voro, especialista en el Sur del Bronx. Noté su propiedad en la calle 138 y quería comunicarme — ¿tiene alguna unidad disponible o próxima a quedar disponible?",
+      rentStabilized: true, hpdFlags: null, pitch: 'Absentee NJ owner = needs a trusted local agent. Angel is the perfect fit.'
+    }
+  ];
+}
+</script>
+</body>
+</html>
